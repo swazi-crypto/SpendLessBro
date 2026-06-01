@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendLessBro 💸 — Add Expense</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell" id="appShell">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">💸</span>
+      <span class="logo-text">SpendLessBro</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a></li>
+      <li><a href="expenses.html" class="nav-link active"><span class="nav-icon">➕</span> Add Expense</a></li>
+      <li><a href="summary.html" class="nav-link"><span class="nav-icon">📊</span> Summary</a></li>
+    </ul>
+    <div class="sidebar-bottom">
+      <button class="btn-sidebar-action" onclick="resetMonth()">🔄 Monthly Reset</button>
+      <button class="btn-sidebar-action export" onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+  </nav>
+
+  <header class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+    <span class="topbar-title">💸 SpendLessBro</span>
+  </header>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+      <div class="modal-emoji">✏️</div>
+      <h2>Edit Expense</h2>
+      <input type="hidden" id="editId"/>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="editDesc" placeholder="e.g. Taxi to campus"/>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="editCategory">
+          <option value="transport">🚌 Transport</option>
+          <option value="food">🍔 Food</option>
+          <option value="data">📱 Data / Airtime</option>
+          <option value="entertainment">🎮 Entertainment</option>
+          <option value="other">📦 Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Amount</label>
+        <div class="input-group">
+          <span class="input-prefix">R</span>
+          <input type="number" id="editAmount" placeholder="0.00" min="0" step="0.01"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="editDate"/>
+      </div>
+      <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Add Expense ➕</h1>
+        <p class="page-subtitle">Track every rand you spend</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <!-- FORM -->
+      <div class="card form-card">
+        <h3 class="card-title">New Expense</h3>
+
+        <div class="form-group">
+          <label>Pick a category</label>
+          <div class="category-pills" id="categoryPills">
+            <button class="pill active" data-cat="transport" onclick="selectCategory(this)">🚌 Transport</button>
+            <button class="pill" data-cat="food" onclick="selectCategory(this)">🍔 Food</button>
+            <button class="pill" data-cat="data" onclick="selectCategory(this)">📱 Data</button>
+            <button class="pill" data-cat="entertainment" onclick="selectCategory(this)">🎮 Fun</button>
+            <button class="pill" data-cat="other" onclick="selectCategory(this)">📦 Other</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="expDesc">What was it for?</label>
+          <input type="text" id="expDesc" placeholder="e.g. Taxi to campus, Lunch, Netflix..." maxlength="80"/>
+        </div>
+
+        <div class="form-group">
+          <label for="expAmount">How much? (Rands)</label>
+          <div class="input-group">
+            <span class="input-prefix">R</span>
+            <input type="number" id="expAmount" placeholder="0.00" min="0" step="0.01"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="expDate">When?</label>
+          <input type="date" id="expDate"/>
+        </div>
+
+        <button class="btn-primary full-width" onclick="addExpense()">➕ Add Expense</button>
+        <div class="toast" id="toast"></div>
+      </div>
+
+      <!-- CATEGORY TOTALS -->
+      <div class="card">
+        <h3 class="card-title">Spending by Category 📊</h3>
+        <div id="categoryTotals"><p class="empty-msg">No expenses yet — start adding some!</p></div>
+      </div>
+    </div>
+
+    <!-- ALL EXPENSES -->
+    <div class="card">
+      <div class="card-header-row">
+        <h3 class="card-title">All Expenses 📋</h3>
+        <select id="filterCat" onchange="renderExpensesList()" style="width:auto;padding:6px 10px;font-size:13px">
+          <option value="all">All</option>
+          <option value="transport">🚌 Transport</option>
+          <option value="food">🍔 Food</option>
+          <option value="data">📱 Data</option>
+          <option value="entertainment">🎮 Fun</option>
+          <option value="other">📦 Other</option>
+        </select>
+      </div>
+      <div id="expensesList">
+        <div class="empty-state">
+          <div class="empty-icon">💳</div>
+          <p>No expenses yet. Add your first one above!</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+<script src="js/expenses.js"></script>
+</body>
+</html>

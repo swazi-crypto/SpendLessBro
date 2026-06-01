@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendLessBro 💸</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+
+<div class="welcome-screen" id="welcomeScreen">
+  <div class="welcome-bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="welcome-content">
+    <div class="welcome-logo">💸</div>
+    <h1 class="welcome-title">SpendLessBro</h1>
+    <p class="welcome-tag">Because NSFAS disappears fast.</p>
+    <p class="welcome-desc">Your free student budget tracker. Track every rand, stress less, and actually know where your money goes.</p>
+    <button class="welcome-btn" onclick="enterApp()">Let's go 🚀</button>
+  </div>
+</div>
+
+
+<div class="app-shell" id="appShell" style="display:none">
+
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">💸</span>
+      <span class="logo-text">SpendLessBro</span>
+    </div>
+    <ul class="nav-links">
+      <li>
+        <a href="index.html" class="nav-link active">
+          <span class="nav-icon">🏠</span> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="expenses.html" class="nav-link">
+          <span class="nav-icon">➕</span> Add Expense
+        </a>
+      </li>
+      <li>
+        <a href="summary.html" class="nav-link">
+          <span class="nav-icon">📊</span> Summary
+        </a>
+      </li>
+    </ul>
+    <div class="sidebar-bottom">
+      <button class="btn-sidebar-action" onclick="resetMonth()">🔄 Monthly Reset</button>
+      <button class="btn-sidebar-action export" onclick="exportCSV()">⬇️ Export CSV</button>
+    </div>
+  </nav>
+
+
+  <header class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="topbar-title">💸 SpendLessBro</span>
+  </header>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+
+  <div class="modal-overlay" id="incomeModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeIncomeModal()">✕</button>
+      <div class="modal-emoji">💰</div>
+      <h2>Set Your Monthly Income</h2>
+      <p>Enter your bursary, allowance, part-time pay — whatever comes in each month.</p>
+      <div class="input-group">
+        <span class="input-prefix">R</span>
+        <input type="number" id="incomeInput" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+      <button class="btn-primary" onclick="saveIncome()">Save Income</button>
+    </div>
+  </div>
+
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard 👋</h1>
+        <p class="page-subtitle" id="dashMonth">Loading...</p>
+      </div>
+      <button class="btn-set-income" onclick="openIncomeModal()">✏️ Set Income</button>
+    </div>
+
+
+    <div class="stats-grid">
+      <div class="stat-card income-card">
+        <div class="stat-emoji">💰</div>
+        <div class="stat-label">Monthly Income</div>
+        <div class="stat-value" id="statIncome">R 0.00</div>
+      </div>
+      <div class="stat-card expense-card">
+        <div class="stat-emoji">💸</div>
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value" id="statExpenses">R 0.00</div>
+      </div>
+      <div class="stat-card balance-card">
+        <div class="stat-emoji">🏦</div>
+        <div class="stat-label">Money Left</div>
+        <div class="stat-value" id="statBalance">R 0.00</div>
+      </div>
+      <div class="stat-card savings-card">
+        <div class="stat-emoji">📈</div>
+        <div class="stat-label">Savings Rate</div>
+        <div class="stat-value" id="statSavings">0%</div>
+      </div>
+    </div>
+
+   
+    <div class="card">
+      <div class="progress-header">
+        <span>Budget used this month</span>
+        <span id="budgetUsedPct" class="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="budgetProgressBar" style="width:0%"></div>
+      </div>
+      <p class="progress-hint" id="progressHint">Set your income to start tracking</p>
+    </div>
+
+
+    <div class="two-col">
+      <div class="card chart-card">
+        <h3 class="card-title">Spending Breakdown 🍩</h3>
+        <div class="chart-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="chart-empty" id="chartEmpty">Add expenses to see chart</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Your Insights 💡</h3>
+        <div id="insightsList"><p class="empty-msg">Add some expenses to get insights.</p></div>
+      </div>
+    </div>
+
+  
+    <div class="card">
+      <div class="card-header-row">
+        <h3 class="card-title">Recent Spending 🧾</h3>
+        <a href="expenses.html" class="link-subtle">See all →</a>
+      </div>
+      <div id="recentList">
+        <div class="empty-state">
+          <div class="empty-icon">🤔</div>
+          <p>Nothing here yet.<br><a href="expenses.html">Add your first expense →</a></p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
