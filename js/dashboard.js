@@ -1,6 +1,3 @@
-/**
- * dashboard.js — SpendLessBro dashboard page
- */
 
 let donutChart = null;
 
@@ -123,4 +120,10 @@ function buildExpenseRow(e) {
     </div>
     <div class="expense-amount">${formatRand(e.amount)}</div>
   </div>`;
+}
+function enterApp() {
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("appShell").style.display = "block";
+
+  renderDashboard(); // load dashboard data
 }
