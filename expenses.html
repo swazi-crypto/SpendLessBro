@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SpendLessBro 💸 — Add Expense</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>SpendLessBro — Log a Spend</title>
+  <link rel="stylesheet" href="css/style.css?v=5" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
@@ -13,23 +13,22 @@
 
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">💸</span>
       <span class="logo-text">SpendLessBro</span>
     </div>
     <ul class="nav-links">
-      <li><a href="index.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a></li>
-      <li><a href="expenses.html" class="nav-link active"><span class="nav-icon">➕</span> Add Expense</a></li>
-      <li><a href="summary.html" class="nav-link"><span class="nav-icon">📊</span> Summary</a></li>
+      <li><a href="index.html" class="nav-link">Vibe Check</a></li>
+      <li><a href="expenses.html" class="nav-link active">Log a Spend</a></li>
+      <li><a href="summary.html" class="nav-link">The Breakdown</a></li>
     </ul>
     <div class="sidebar-bottom">
-      <button class="btn-sidebar-action" onclick="resetMonth()">🔄 Monthly Reset</button>
-      <button class="btn-sidebar-action export" onclick="exportCSV()">⬇️ Export CSV</button>
+      <button class="btn-sidebar-action" onclick="resetMonth()">Monthly Reset</button>
+      <button class="btn-sidebar-action export" onclick="exportCSV()">Export CSV</button>
     </div>
   </nav>
 
   <header class="topbar">
     <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
-    <span class="topbar-title">💸 SpendLessBro</span>
+    <span class="topbar-title">SpendLessBro</span>
   </header>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
@@ -37,7 +36,6 @@
   <div class="modal-overlay" id="editModal">
     <div class="modal">
       <button class="modal-close" onclick="closeEditModal()">✕</button>
-      <div class="modal-emoji">✏️</div>
       <h2>Edit Expense</h2>
       <input type="hidden" id="editId"/>
       <div class="form-group">
@@ -47,11 +45,13 @@
       <div class="form-group">
         <label>Category</label>
         <select id="editCategory">
-          <option value="transport">🚌 Transport</option>
-          <option value="food">🍔 Food</option>
-          <option value="data">📱 Data / Airtime</option>
-          <option value="entertainment">🎮 Entertainment</option>
-          <option value="other">📦 Other</option>
+          <option value="groceries">Groceries</option>
+          <option value="transport">Transport</option>
+          <option value="fastfood">Fast Food</option>
+          <option value="shopping">Shopping</option>
+          <option value="fun">Entertainment</option>
+          <option value="subscriptions">Subscriptions</option>
+          <option value="other">Other</option>
         </select>
       </div>
       <div class="form-group">
@@ -69,11 +69,22 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h2>Are you sure?</h2>
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn-icon" onclick="cancelConfirm()">Cancel</button>
+        <button class="btn-primary" onclick="acceptConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <main class="main-content">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Add Expense ➕</h1>
-        <p class="page-subtitle">Track every rand you spend</p>
+        <h1 class="page-title">Log a Spend</h1>
+        <p class="page-subtitle">Track every rand before it disappears</p>
       </div>
     </div>
 
@@ -85,11 +96,13 @@
         <div class="form-group">
           <label>Pick a category</label>
           <div class="category-pills" id="categoryPills">
-            <button class="pill active" data-cat="transport" onclick="selectCategory(this)">🚌 Transport</button>
-            <button class="pill" data-cat="food" onclick="selectCategory(this)">🍔 Food</button>
-            <button class="pill" data-cat="data" onclick="selectCategory(this)">📱 Data</button>
-            <button class="pill" data-cat="entertainment" onclick="selectCategory(this)">🎮 Fun</button>
-            <button class="pill" data-cat="other" onclick="selectCategory(this)">📦 Other</button>
+            <button class="pill active" data-cat="groceries" onclick="selectCategory(this)">Groceries</button>
+            <button class="pill" data-cat="transport" onclick="selectCategory(this)">Transport</button>
+            <button class="pill" data-cat="fastfood" onclick="selectCategory(this)">Fast Food</button>
+            <button class="pill" data-cat="shopping" onclick="selectCategory(this)">Shopping</button>
+            <button class="pill" data-cat="fun" onclick="selectCategory(this)">Entertainment</button>
+            <button class="pill" data-cat="subscriptions" onclick="selectCategory(this)">Subscriptions</button>
+            <button class="pill" data-cat="other" onclick="selectCategory(this)">Other</button>
           </div>
         </div>
 
@@ -111,13 +124,13 @@
           <input type="date" id="expDate"/>
         </div>
 
-        <button class="btn-primary full-width" onclick="addExpense()">➕ Add Expense</button>
+        <button class="btn-primary full-width" onclick="addExpense()">Add Expense</button>
         <div class="toast" id="toast"></div>
       </div>
 
       <!-- CATEGORY TOTALS -->
       <div class="card">
-        <h3 class="card-title">Spending by Category 📊</h3>
+        <h3 class="card-title">Spending by Category</h3>
         <div id="categoryTotals"><p class="empty-msg">No expenses yet — start adding some!</p></div>
       </div>
     </div>
@@ -125,19 +138,23 @@
     <!-- ALL EXPENSES -->
     <div class="card">
       <div class="card-header-row">
-        <h3 class="card-title">All Expenses 📋</h3>
-        <select id="filterCat" onchange="renderExpensesList()" style="width:auto;padding:6px 10px;font-size:13px">
-          <option value="all">All</option>
-          <option value="transport">🚌 Transport</option>
-          <option value="food">🍔 Food</option>
-          <option value="data">📱 Data</option>
-          <option value="entertainment">🎮 Fun</option>
-          <option value="other">📦 Other</option>
-        </select>
+        <h3 class="card-title">All Expenses</h3>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="searchExp" oninput="renderExpensesList()" placeholder="Search transactions..." style="width:auto;padding:6px 10px;font-size:13px"/>
+          <select id="filterCat" onchange="renderExpensesList()" style="width:auto;padding:6px 10px;font-size:13px">
+            <option value="all">All</option>
+            <option value="groceries">Groceries</option>
+            <option value="transport">Transport</option>
+            <option value="fastfood">Fast Food</option>
+            <option value="shopping">Shopping</option>
+            <option value="fun">Entertainment</option>
+            <option value="subscriptions">Subscriptions</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
       </div>
       <div id="expensesList">
         <div class="empty-state">
-          <div class="empty-icon">💳</div>
           <p>No expenses yet. Add your first one above!</p>
         </div>
       </div>
@@ -145,8 +162,10 @@
   </main>
 </div>
 
-<script src="js/storage.js"></script>
-<script src="js/app.js"></script>
-<script src="js/expenses.js"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/insights.js?v=5"></script>
+<script src="js/expenses.js?v=5"></script>
 </body>
 </html>
+
