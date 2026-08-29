@@ -3,89 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SpendLessBro 💸 — Summary</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>SpendLessBro — The Breakdown</title>
+  <link rel="stylesheet" href="css/style.css?v=5" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="app-shell" id="appShell">
 
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">💸</span>
       <span class="logo-text">SpendLessBro</span>
     </div>
     <ul class="nav-links">
-      <li><a href="index.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a></li>
-      <li><a href="expenses.html" class="nav-link"><span class="nav-icon">➕</span> Add Expense</a></li>
-      <li><a href="summary.html" class="nav-link active"><span class="nav-icon">📊</span> Summary</a></li>
+      <li><a href="index.html" class="nav-link">Vibe Check</a></li>
+      <li><a href="expenses.html" class="nav-link">Log a Spend</a></li>
+      <li><a href="summary.html" class="nav-link active">The Breakdown</a></li>
     </ul>
     <div class="sidebar-bottom">
-      <button class="btn-sidebar-action" onclick="resetMonth()">🔄 Monthly Reset</button>
-      <button class="btn-sidebar-action export" onclick="exportCSV()">⬇️ Export CSV</button>
+      <button class="btn-sidebar-action" onclick="resetMonth()">Monthly Reset</button>
+      <button class="btn-sidebar-action export" onclick="exportCSV()">Export CSV</button>
     </div>
   </nav>
 
   <header class="topbar">
     <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
-    <span class="topbar-title">💸 SpendLessBro</span>
+    <span class="topbar-title">SpendLessBro</span>
   </header>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <div class="modal-overlay" id="budgetModal">
+    <div class="modal modal-wide">
+      <button class="modal-close" onclick="closeBudgetModal()">✕</button>
+      <h2>Set Category Budgets</h2>
+      <p>Set a monthly spending limit per category. Leave a category at 0 for no limit. Subscriptions aren't listed here — they're tracked separately as a fixed cost.</p>
+      <div class="budget-inputs" id="budgetInputs"></div>
+      <button class="btn-primary full-width" onclick="saveBudgets()">Save Budgets</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="savingsGoalModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeSavingsGoalModal()">✕</button>
+      <h2>Set Your Savings Goal</h2>
+      <p>How much do you want to have left over by the end of the month? This tracks separately from your category budget limits.</p>
+      <div class="input-group">
+        <span class="input-prefix">R</span>
+        <input type="number" id="savingsGoalInput" placeholder="0.00" min="0" step="10"/>
+      </div>
+      <button class="btn-primary full-width" onclick="saveSavingsGoal()">Save Goal</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h2>Are you sure?</h2>
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn-icon" onclick="cancelConfirm()">Cancel</button>
+        <button class="btn-primary" onclick="acceptConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
 
   <main class="main-content">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Summary 📊</h1>
-        <p class="page-subtitle" id="summaryMonth">Monthly Overview</p>
+        <h1 class="page-title">The Breakdown</h1>
+        <p class="page-subtitle" id="summaryMonth">Loading...</p>
       </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card income-card">
-        <div class="stat-emoji">💰</div>
-        <div class="stat-label">Income</div>
-        <div class="stat-value" id="sumIncome">R 0.00</div>
-      </div>
-      <div class="stat-card expense-card">
-        <div class="stat-emoji">💸</div>
-        <div class="stat-label">Expenses</div>
-        <div class="stat-value" id="sumExpenses">R 0.00</div>
-      </div>
-      <div class="stat-card balance-card">
-        <div class="stat-emoji">🏦</div>
-        <div class="stat-label">Balance</div>
-        <div class="stat-value" id="sumBalance">R 0.00</div>
-      </div>
-      <div class="stat-card savings-card">
-        <div class="stat-emoji">📈</div>
-        <div class="stat-label">Saved</div>
-        <div class="stat-value" id="sumSavings">0%</div>
-      </div>
+      <button class="btn-set-income" onclick="openBudgetModal()">Edit Budgets</button>
     </div>
 
     <div class="card">
-      <h3 class="card-title">Spending by Category (Bar Chart) 📊</h3>
-      <div style="height:250px">
-        <canvas id="barChart"></canvas>
-      </div>
+      <h3 class="card-title">This Month's Pace</h3>
+      <p class="pace-text" id="paceText">Loading...</p>
     </div>
 
     <div class="card">
-      <h3 class="card-title">Category Breakdown 📋</h3>
-      <div id="breakdownTable"><p class="empty-msg">No expenses this month yet.</p></div>
+      <div class="card-header-row">
+        <h3 class="card-title">Savings Goal</h3>
+        <span class="budget-overall-badge" id="savingsGoalBadge">—</span>
+      </div>
+      <div id="savingsGoalBody"></div>
+      <button class="btn-set-income full-width" onclick="openSavingsGoalModal()">Set / Edit Goal</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row">
+        <h3 class="card-title">Budget vs Actual</h3>
+        <span class="budget-overall-badge" id="budgetOverallBadge">—</span>
+      </div>
+      <div id="budgetPerformance"></div>
+      <p class="fixed-costs-note" id="fixedCosts">Loading...</p>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Monthly Trend</h3>
+      <p class="pace-text" id="trendOverall">Loading...</p>
+      <div id="trendList"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Level Up</h3>
+      <div id="fullInsights"></div>
     </div>
 
     <div class="card tips-card">
-      <h3 class="card-title">💡 Money Tips for Students</h3>
+      <h3 class="card-title">Money Tips for Students</h3>
       <div class="tips-grid" id="tipsGrid"></div>
     </div>
   </main>
 </div>
 
-<script src="js/storage.js"></script>
-<script src="js/app.js"></script>
-<script src="js/summary.js"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/insights.js?v=5"></script>
+<script src="js/summary.js?v=5"></script>
 </body>
 </html>
