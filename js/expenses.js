@@ -1,8 +1,4 @@
-/**
- * expenses.js — SpendLessBro expense management
- */
-
-let selectedCategory = 'transport';
+let selectedCategory = 'groceries';
 
 function selectCategory(btn) {
   document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -26,7 +22,15 @@ function addExpense() {
   document.getElementById('expDesc').value = '';
   document.getElementById('expAmount').value = '';
   document.getElementById('expDate').value = todayStr();
-  showToast('Expense added! 💸', 'success');
+
+
+  const feedback = getTransactionFeedback(selectedCategory, Storage.getCategoryTotals(), Storage.getBudgets(), Storage.getTotalExpenses(), Storage.getIncome());
+  if (feedback) {
+    showToast(feedback.text, feedback.level === 'danger' ? 'error' : 'warn');
+  } else {
+    showToast('Expense added. Nice one.', 'success');
+  }
+
   renderExpensesList();
   renderCategoryTotals();
 }
@@ -44,36 +48,42 @@ function renderExpensesList() {
   const listEl = document.getElementById('expensesList');
   if (!listEl) return;
   const filter = document.getElementById('filterCat')?.value || 'all';
+  const search = (document.getElementById('searchExp')?.value || '').trim().toLowerCase();
   let expenses = Storage.getExpenses();
   if (filter !== 'all') expenses = expenses.filter(e => e.category === filter);
+  if (search) expenses = expenses.filter(e => (e.description || '').toLowerCase().includes(search));
 
   if (!expenses.length) {
+    const msg = search ? `No expenses match "${search}".`
+      : filter !== 'all' ? 'No expenses in this category yet.'
+      : 'No expenses yet — add your first one above!';
     listEl.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">💳</div>
-      <p>${filter !== 'all' ? 'No expenses in this category yet.' : 'No expenses yet — add your first one above!'}</p>
+      <p>${msg}</p>
     </div>`;
     return;
   }
   listEl.innerHTML = expenses.map(e => `
     <div class="expense-row" id="row-${e.id}">
-      <div class="cat-dot ${e.category}">${(CATEGORIES[e.category]||CATEGORIES.other).emoji}</div>
+      <div class="cat-dot" style="background:${(CATEGORIES[e.category]||CATEGORIES.other).color}"></div>
       <div class="expense-info">
         <div class="expense-desc">${e.description || (CATEGORIES[e.category]||CATEGORIES.other).label}</div>
         <div class="expense-meta">${(CATEGORIES[e.category]||CATEGORIES.other).label} &middot; ${formatDate(e.date)}</div>
       </div>
       <div class="expense-amount">${formatRand(e.amount)}</div>
       <div class="expense-actions">
-        <button class="btn-icon" onclick="openEdit('${e.id}')" title="Edit">✏️</button>
-        <button class="btn-icon del" onclick="deleteExp('${e.id}')" title="Delete">🗑️</button>
+        <button class="btn-icon" onclick="openEdit('${e.id}')" title="Edit">Edit</button>
+        <button class="btn-icon del" onclick="deleteExp('${e.id}')" title="Delete">Delete</button>
       </div>
     </div>`).join('');
 }
 
 function deleteExp(id) {
-  if (!confirm('Delete this expense?')) return;
-  Storage.deleteExpense(id);
-  renderExpensesList();
-  renderCategoryTotals();
+  showConfirm('Delete this expense?', () => {
+    Storage.deleteExpense(id);
+    renderExpensesList();
+    renderCategoryTotals();
+    showToast('Expense deleted.', 'success');
+  });
 }
 
 function openEdit(id) {
@@ -96,7 +106,7 @@ function saveEdit() {
   const amount = parseFloat(document.getElementById('editAmount').value);
   const date   = document.getElementById('editDate').value;
   if (!desc || isNaN(amount) || amount <= 0 || !date) {
-    alert('Please fill in all fields correctly.'); return;
+    notify('Please fill in all fields correctly.', 'error'); return;
   }
   Storage.updateExpense(id, { description: desc, category: cat, amount, date });
   closeEditModal();
@@ -119,7 +129,7 @@ function renderCategoryTotals() {
     const pct  = total > 0 ? ((amt/total)*100).toFixed(0) : 0;
     const barW = max > 0 ? ((amt/max)*100).toFixed(1) : 0;
     return `<div class="cat-total-row">
-      <span class="cat-name">${meta.emoji} ${meta.label}</span>
+      <span class="cat-name">${meta.label}</span>
       <div class="cat-bar-wrap"><div class="cat-bar" style="width:${barW}%;background:${meta.color}"></div></div>
       <span class="cat-amt">${formatRand(amt)}</span>
       <span class="cat-pct">${pct}%</span>
@@ -134,3 +144,4 @@ document.getElementById('editModal').addEventListener('click', function(e) {
 document.getElementById('expDate').value = todayStr();
 renderExpensesList();
 renderCategoryTotals();
+
