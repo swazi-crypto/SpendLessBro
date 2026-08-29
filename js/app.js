@@ -1,14 +1,17 @@
-/**
- * app.js — Shared utilities (SpendLessBro)
- */
+
 
 const CATEGORIES = {
-  transport:     { label: 'Transport',    emoji: '🚌', color: '#7c6cfa' },
-  food:          { label: 'Food',         emoji: '🍔', color: '#56cfb2' },
-  data:          { label: 'Data/Airtime', emoji: '📱', color: '#f7a34e' },
-  entertainment: { label: 'Entertainment',emoji: '🎮', color: '#ff6aa7' },
-  other:         { label: 'Other',        emoji: '📦', color: '#888888' }
+  groceries:     { label: 'Groceries',       color: '#56cfb2' },
+  transport:     { label: 'Transport',       color: '#7c6cfa' },
+  fastfood:      { label: 'Fast Food',       color: '#f7a34e' },
+  shopping:      { label: 'Shopping',        color: '#4ea8f7' },
+  fun:           { label: 'Entertainment',   color: '#ff6aa7' },
+  subscriptions: { label: 'Subscriptions',   color: '#c084fc' },
+  other:         { label: 'Other',           color: '#888888' }
 };
+
+
+const BUDGET_CATEGORY_KEYS = ['groceries', 'transport', 'fastfood', 'shopping', 'fun', 'other'];
 
 function formatRand(amount) {
   return 'R ' + parseFloat(amount || 0).toLocaleString('en-ZA', {
@@ -35,37 +38,240 @@ function toggleSidebar() {
   document.getElementById('sidebarOverlay').classList.toggle('open');
 }
 
+
+let _confirmCallback = null;
+
+function showConfirm(message, onConfirm) {
+  const modal = document.getElementById('confirmModal');
+  if (!modal) { onConfirm(); return; } // page has no modal markup — just proceed
+  document.getElementById('confirmMessage').textContent = message;
+  _confirmCallback = onConfirm;
+  modal.classList.add('open');
+}
+function acceptConfirm() {
+  const modal = document.getElementById('confirmModal');
+  if (modal) modal.classList.remove('open');
+  const cb = _confirmCallback;
+  _confirmCallback = null;
+  if (cb) cb();
+}
+function cancelConfirm() {
+  const modal = document.getElementById('confirmModal');
+  if (modal) modal.classList.remove('open');
+  _confirmCallback = null;
+}
+
+function notify(message, type) {
+  let el = document.getElementById('appNotify');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'appNotify';
+    el.className = 'app-notify';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.className = 'app-notify visible' + (type === 'error' ? ' error' : '');
+  clearTimeout(window._notifyTimeout);
+  window._notifyTimeout = setTimeout(() => { el.classList.remove('visible'); }, 2600);
+}
+
+
 function openIncomeModal() {
   const modal = document.getElementById('incomeModal');
   if (!modal) return;
-  const v = Storage.getIncome();
-  if (v > 0) document.getElementById('incomeInput').value = v;
+  const fixedInput = document.getElementById('fixedIncomeInput');
+  if (fixedInput) fixedInput.value = Storage.getFixedIncome() || '';
+  const dateInput = document.getElementById('extraIncomeDate');
+  if (dateInput && !dateInput.value) dateInput.value = todayStr();
+  renderAdditionalIncomeList();
+  updateIncomeModalTotal();
   modal.classList.add('open');
-  setTimeout(() => document.getElementById('incomeInput').focus(), 100);
 }
 function closeIncomeModal() {
   const m = document.getElementById('incomeModal');
   if (m) m.classList.remove('open');
 }
-function saveIncome() {
-  const val = parseFloat(document.getElementById('incomeInput').value);
-  if (isNaN(val) || val < 0) { alert('Please enter a valid amount.'); return; }
-  Storage.setIncome(val);
-  closeIncomeModal();
+
+function saveFixedIncome() {
+  const val = parseFloat(document.getElementById('fixedIncomeInput').value);
+  if (isNaN(val) || val < 0) { notify('Please enter a valid amount.', 'error'); return; }
+  Storage.setFixedIncome(val);
+  updateIncomeModalTotal();
+  notify('Fixed income saved.');
   if (typeof renderDashboard === 'function') renderDashboard();
 }
 
+function addAdditionalIncomeEntry() {
+  const descInput = document.getElementById('extraIncomeDesc');
+  const amountInput = document.getElementById('extraIncomeAmount');
+  const dateInput = document.getElementById('extraIncomeDate');
+  const amount = parseFloat(amountInput.value);
+  const date = dateInput.value || todayStr();
+
+  if (isNaN(amount) || amount <= 0) { notify('Please enter a valid amount.', 'error'); return; }
+
+  Storage.addAdditionalIncome({
+    description: descInput.value.trim() || 'Extra income',
+    amount,
+    date
+  });
+
+  descInput.value = '';
+  amountInput.value = '';
+  dateInput.value = todayStr();
+
+  renderAdditionalIncomeList();
+  updateIncomeModalTotal();
+  notify('Extra income added.');
+  if (typeof renderDashboard === 'function') renderDashboard();
+}
+
+function deleteAdditionalIncomeEntry(id) {
+  showConfirm('Remove this income entry?', () => {
+    Storage.deleteAdditionalIncome(id);
+    renderAdditionalIncomeList();
+    updateIncomeModalTotal();
+    notify('Entry removed.');
+    if (typeof renderDashboard === 'function') renderDashboard();
+  });
+}
+
+function renderAdditionalIncomeList() {
+  const el = document.getElementById('additionalIncomeList');
+  if (!el) return;
+  const entries = Storage.getAdditionalIncome();
+  if (!entries.length) {
+    el.innerHTML = '<p class="empty-msg">No extra income logged yet this month.</p>';
+    return;
+  }
+  el.innerHTML = entries.map(e => `
+    <div class="additional-income-row">
+      <div class="additional-income-info">
+        <div class="additional-income-desc">${e.description}</div>
+        <div class="additional-income-date">${formatDate(e.date)}</div>
+      </div>
+      <div class="additional-income-amt">${formatRand(e.amount)}</div>
+      <button class="btn-icon del" onclick="deleteAdditionalIncomeEntry('${e.id}')" title="Remove">Remove</button>
+    </div>`).join('');
+}
+
+function updateIncomeModalTotal() {
+  const el = document.getElementById('incomeModalTotal');
+  if (el) el.textContent = formatRand(Storage.getIncome());
+}
+
+// ---- Budget limits modal (shared by Dashboard + Summary) --------------
+function openBudgetModal() {
+  const modal = document.getElementById('budgetModal');
+  const wrap = document.getElementById('budgetInputs');
+  if (!modal || !wrap) return;
+  const budgets = Storage.getBudgets();
+  wrap.innerHTML = BUDGET_CATEGORY_KEYS.map(key => {
+    const meta = CATEGORIES[key];
+    return `
+    <div class="budget-input-row">
+      <span class="cat-dot" style="background:${meta.color}"></span>
+      <label for="budget-${key}">${meta.label}</label>
+      <div class="input-group">
+        <span class="input-prefix">R</span>
+        <input type="number" id="budget-${key}" min="0" step="10" value="${budgets[key] || ''}" placeholder="0">
+      </div>
+    </div>`;
+  }).join('');
+  modal.classList.add('open');
+}
+
+function closeBudgetModal() {
+  const m = document.getElementById('budgetModal');
+  if (m) m.classList.remove('open');
+}
+
+function saveBudgets() {
+  const updated = {};
+  BUDGET_CATEGORY_KEYS.forEach(key => {
+    const input = document.getElementById('budget-' + key);
+    updated[key] = input ? (parseFloat(input.value) || 0) : 0;
+  });
+  Storage.setBudgets(updated);
+  closeBudgetModal();
+  notify('Budget limits saved.');
+  if (typeof renderDashboard === 'function') renderDashboard();
+  if (typeof renderSummary === 'function') renderSummary();
+}
+
 function resetMonth() {
-  if (!confirm('Reset all data for this month? This cannot be undone.')) return;
-  Storage.resetMonth();
-  if (typeof renderDashboard   === 'function') renderDashboard();
-  if (typeof renderExpensesList=== 'function') { renderExpensesList(); renderCategoryTotals(); }
-  if (typeof renderSummary     === 'function') renderSummary();
+  showConfirm('Reset all data for this month? This cannot be undone.', () => {
+    Storage.resetMonth();
+    if (typeof renderDashboard   === 'function') renderDashboard();
+    if (typeof renderExpensesList=== 'function') { renderExpensesList(); renderCategoryTotals(); }
+    if (typeof renderSummary     === 'function') renderSummary();
+    renderSavingsGoalCard();
+    notify('Month reset.');
+  });
+}
+
+// ---- Savings goal card + modal (shared by Dashboard + Summary) --------
+// A savings goal is separate from budget limits — it tracks "money left
+// over" against a target the user sets, not a per-category spending cap.
+function openSavingsGoalModal() {
+  const modal = document.getElementById('savingsGoalModal');
+  if (!modal) return;
+  const input = document.getElementById('savingsGoalInput');
+  if (input) input.value = Storage.getSavingsGoal() || '';
+  modal.classList.add('open');
+}
+
+function closeSavingsGoalModal() {
+  const m = document.getElementById('savingsGoalModal');
+  if (m) m.classList.remove('open');
+}
+
+function saveSavingsGoal() {
+  const val = parseFloat(document.getElementById('savingsGoalInput').value);
+  if (isNaN(val) || val < 0) { notify('Please enter a valid amount.', 'error'); return; }
+  Storage.setSavingsGoal(val);
+  closeSavingsGoalModal();
+  notify('Savings goal saved.');
+  renderSavingsGoalCard();
+}
+
+function renderSavingsGoalCard() {
+  const body = document.getElementById('savingsGoalBody');
+  const badge = document.getElementById('savingsGoalBadge');
+  if (!body) return; // this page doesn't have the card — nothing to do
+
+  const goal = Storage.getSavingsGoal();
+  const income = Storage.getIncome();
+  const total = Storage.getTotalExpenses();
+  const progress = computeSavingsGoalProgress({ income, total, savingsGoal: goal });
+
+  if (!progress) {
+    body.innerHTML = '<p class="empty-msg">Set a savings goal to start tracking progress.</p>';
+    if (badge) { badge.textContent = 'No goal set'; badge.className = 'budget-overall-badge none'; }
+    return;
+  }
+
+  const barClass = (progress.current >= progress.goal || progress.onTrack) ? 'ok' : 'warn';
+  body.innerHTML = `
+    <div class="budget-row">
+      <div class="budget-row-top">
+        <span class="budget-cat">Left over so far</span>
+        <span class="budget-amounts">${formatRand(progress.current)} / ${formatRand(progress.goal)}</span>
+      </div>
+      <div class="budget-track"><div class="budget-fill ${barClass}" style="width:${progress.pct}%"></div></div>
+      <div class="budget-status ${barClass}">${progress.message}</div>
+    </div>`;
+
+  if (badge) {
+    if (progress.current >= progress.goal) { badge.textContent = 'Goal hit!'; badge.className = 'budget-overall-badge ok'; }
+    else if (progress.onTrack) { badge.textContent = 'On track'; badge.className = 'budget-overall-badge ok'; }
+    else { badge.textContent = 'Behind pace'; badge.className = 'budget-overall-badge warn'; }
+  }
 }
 
 function exportCSV() {
   const expenses = Storage.getExpenses();
-  if (!expenses.length) { alert('No expenses to export.'); return; }
+  if (!expenses.length) { notify('No expenses to export.', 'error'); return; }
   const income = Storage.getIncome();
   const total  = Storage.getTotalExpenses();
   let csv = `SpendLessBro Export\nMonth,${monthLabel()}\nIncome,R ${income.toFixed(2)}\nTotal Expenses,R ${total.toFixed(2)}\nBalance,R ${(income-total).toFixed(2)}\n\nDate,Category,Description,Amount\n`;
@@ -76,30 +282,6 @@ function exportCSV() {
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = `SpendLessBro_${Storage.currentMonth()}.csv`;
   a.click();
-}
-
-function generateInsights(income, totals, total) {
-  const insights = [];
-  if (!income) return [{ icon:'ℹ️', text:'Set your monthly income to get personalised tips.', type:'' }];
-  if (!total)  return [{ icon:'🎉', text:'No expenses yet — your money is still safe! Add expenses to track your spending.', type:'good' }];
-
-  const pct    = (total / income) * 100;
-  const saved  = 100 - pct;
-
-  if (saved >= 20)     insights.push({ icon:'🎉', text:`You've saved ${saved.toFixed(0)}% this month — amazing!`, type:'good' });
-  else if (saved > 0)  insights.push({ icon:'💡', text:`You've saved ${saved.toFixed(0)}% — try to hit 20%.`, type:'warn' });
-  else                 insights.push({ icon:'🚨', text:'You've spent more than your income this month. Time to cut back!', type:'alert' });
-
-  if (totals.entertainment > 0 && (totals.entertainment/income*100) > 15)
-    insights.push({ icon:'🎮', text:`Entertainment is eating ${(totals.entertainment/income*100).toFixed(0)}% of your income. Can you reduce it?`, type:'warn' });
-  if (totals.transport > 0 && (totals.transport/income*100) > 20)
-    insights.push({ icon:'🚌', text:`Transport is ${(totals.transport/income*100).toFixed(0)}% of income. Walk where you can!`, type:'warn' });
-  if (totals.food > 0 && (totals.food/income*100) > 30)
-    insights.push({ icon:'🍔', text:`Food is ${(totals.food/income*100).toFixed(0)}% of income. Try cooking at home more.`, type:'warn' });
-  if (pct < 50 && total > 0)
-    insights.push({ icon:'📊', text:`Only ${pct.toFixed(0)}% of your income spent so far. Great discipline!`, type:'good' });
-
-  return insights.slice(0, 5);
 }
 
 // ---- Welcome screen ----
@@ -117,7 +299,7 @@ function enterApp() {
   }, 400);
 }
 
-// ---- Auto skip welcome if returning visitor ----
+/
 window.addEventListener('DOMContentLoaded', () => {
   const ws = document.getElementById('welcomeScreen');
   const app = document.getElementById('appShell');
@@ -130,17 +312,29 @@ window.addEventListener('DOMContentLoaded', () => {
     app.style.display = 'flex';
     if (typeof renderDashboard === 'function') renderDashboard();
   }
-  // else: welcome screen stays visible, user clicks the button
+  
 });
 
-// close income modal on outside click
+
 document.addEventListener('click', e => {
   const m = document.getElementById('incomeModal');
   if (m && e.target === m) closeIncomeModal();
+  const c = document.getElementById('confirmModal');
+  if (c && e.target === c) cancelConfirm();
+  const b = document.getElementById('budgetModal');
+  if (b && e.target === b) closeBudgetModal();
+  const sg = document.getElementById('savingsGoalModal');
+  if (sg && e.target === sg) closeSavingsGoalModal();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const m = document.getElementById('incomeModal');
-    if (m?.classList.contains('open')) saveIncome();
+  if (e.key !== 'Enter') return;
+  // Enter inside a specific income-modal field submits that field's own
+  // action, rather than a single blanket "save" for the whole modal (it
+  // now has two independent forms: Fixed Income and Additional Income).
+  if (e.target.id === 'fixedIncomeInput') { e.preventDefault(); saveFixedIncome(); }
+  if (e.target.id === 'extraIncomeDesc' || e.target.id === 'extraIncomeAmount') {
+    e.preventDefault(); addAdditionalIncomeEntry();
   }
+  if (e.target.id === 'savingsGoalInput') { e.preventDefault(); saveSavingsGoal(); }
 });
+
