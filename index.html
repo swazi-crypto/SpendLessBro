@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SpendLessBro 💸</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>SpendLessBro</title>
+  <link rel="stylesheet" href="css/style.css?v=5" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -19,11 +19,10 @@
     <div class="blob blob-3"></div>
   </div>
   <div class="welcome-content">
-    <div class="welcome-logo">💸</div>
     <h1 class="welcome-title">SpendLessBro</h1>
     <p class="welcome-tag">Because NSFAS disappears fast.</p>
     <p class="welcome-desc">Your free student budget tracker. Track every rand, stress less, and actually know where your money goes.</p>
-    <button class="welcome-btn" onclick="enterApp()">Let's go 🚀</button>
+    <button class="welcome-btn" onclick="enterApp()">Let's go</button>
   </div>
 </div>
 
@@ -33,29 +32,28 @@
 
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-icon">💸</span>
       <span class="logo-text">SpendLessBro</span>
     </div>
     <ul class="nav-links">
       <li>
         <a href="index.html" class="nav-link active">
-          <span class="nav-icon">🏠</span> Dashboard
+          Vibe Check
         </a>
       </li>
       <li>
         <a href="expenses.html" class="nav-link">
-          <span class="nav-icon">➕</span> Add Expense
+          Log a Spend
         </a>
       </li>
       <li>
         <a href="summary.html" class="nav-link">
-          <span class="nav-icon">📊</span> Summary
+          The Breakdown
         </a>
       </li>
     </ul>
     <div class="sidebar-bottom">
-      <button class="btn-sidebar-action" onclick="resetMonth()">🔄 Monthly Reset</button>
-      <button class="btn-sidebar-action export" onclick="exportCSV()">⬇️ Export CSV</button>
+      <button class="btn-sidebar-action" onclick="resetMonth()">Monthly Reset</button>
+      <button class="btn-sidebar-action export" onclick="exportCSV()">Export CSV</button>
     </div>
   </nav>
 
@@ -64,22 +62,78 @@
     <button class="hamburger" onclick="toggleSidebar()">
       <span></span><span></span><span></span>
     </button>
-    <span class="topbar-title">💸 SpendLessBro</span>
+    <span class="topbar-title">SpendLessBro</span>
   </header>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 
   <div class="modal-overlay" id="incomeModal">
-    <div class="modal">
+    <div class="modal modal-wide">
       <button class="modal-close" onclick="closeIncomeModal()">✕</button>
-      <div class="modal-emoji">💰</div>
-      <h2>Set Your Monthly Income</h2>
-      <p>Enter your bursary, allowance, part-time pay — whatever comes in each month.</p>
+      <h2>Manage Your Income</h2>
+      <p>Your NSFAS allowance is a fixed amount that lands every month — set it once. Log any extra money (from home, part-time work, etc.) as it comes in.</p>
+
+      <div class="income-section">
+        <label>Fixed Income (NSFAS Allowance)</label>
+        <div class="input-group">
+          <span class="input-prefix">R</span>
+          <input type="number" id="fixedIncomeInput" placeholder="0.00" min="0" step="0.01"/>
+        </div>
+        <button class="btn-primary full-width" onclick="saveFixedIncome()">Save Fixed Income</button>
+      </div>
+
+      <div class="income-section">
+        <label>Extra Income This Month</label>
+        <div id="additionalIncomeList"></div>
+        <div class="additional-income-form">
+          <input type="text" id="extraIncomeDesc" placeholder="e.g. Money from home"/>
+          <div class="input-group">
+            <span class="input-prefix">R</span>
+            <input type="number" id="extraIncomeAmount" placeholder="0.00" min="0" step="0.01"/>
+          </div>
+          <input type="date" id="extraIncomeDate"/>
+          <button class="btn-set-income" onclick="addAdditionalIncomeEntry()">+ Add</button>
+        </div>
+      </div>
+
+      <div class="income-total-row">
+        <span>Total Income This Month</span>
+        <span id="incomeModalTotal">R 0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h2>Are you sure?</h2>
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn-icon" onclick="cancelConfirm()">Cancel</button>
+        <button class="btn-primary" onclick="acceptConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="budgetModal">
+    <div class="modal modal-wide">
+      <button class="modal-close" onclick="closeBudgetModal()">✕</button>
+      <h2>Set Category Budgets</h2>
+      <p>Set a monthly spending limit per category. Leave a category at 0 for no limit. Subscriptions aren't listed here — they're tracked separately as a fixed cost.</p>
+      <div class="budget-inputs" id="budgetInputs"></div>
+      <button class="btn-primary full-width" onclick="saveBudgets()">Save Budgets</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="savingsGoalModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeSavingsGoalModal()">✕</button>
+      <h2>Set Your Savings Goal</h2>
+      <p>How much do you want to have left over by the end of the month? This tracks separately from your category budget limits.</p>
       <div class="input-group">
         <span class="input-prefix">R</span>
-        <input type="number" id="incomeInput" placeholder="0.00" min="0" step="0.01"/>
+        <input type="number" id="savingsGoalInput" placeholder="0.00" min="0" step="10"/>
       </div>
-      <button class="btn-primary" onclick="saveIncome()">Save Income</button>
+      <button class="btn-primary full-width" onclick="saveSavingsGoal()">Save Goal</button>
     </div>
   </div>
 
@@ -87,72 +141,116 @@
   <main class="main-content">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Dashboard 👋</h1>
+        <h1 class="page-title">Vibe Check</h1>
         <p class="page-subtitle" id="dashMonth">Loading...</p>
       </div>
-      <button class="btn-set-income" onclick="openIncomeModal()">✏️ Set Income</button>
+      <button class="btn-set-income" onclick="openIncomeModal()">Manage Income</button>
+    </div>
+
+
+    <div class="card score-card">
+      <div class="card-header-row">
+        <h3 class="card-title">SpendLess Score</h3>
+      </div>
+      <div class="score-top">
+        <div class="score-ring" id="scoreRing">
+          <div class="score-ring-inner">
+            <span id="scoreRingValue">—</span>
+            <small>/ 100</small>
+          </div>
+        </div>
+        <div class="score-info">
+          <p class="score-message" id="scoreMessage">Add some expenses to get your first score.</p>
+        </div>
+      </div>
     </div>
 
 
     <div class="stats-grid">
       <div class="stat-card income-card">
-        <div class="stat-emoji">💰</div>
         <div class="stat-label">Monthly Income</div>
         <div class="stat-value" id="statIncome">R 0.00</div>
+        <div class="stat-sub" id="statIncomeSub"></div>
       </div>
       <div class="stat-card expense-card">
-        <div class="stat-emoji">💸</div>
-        <div class="stat-label">Total Expenses</div>
+        <div class="stat-label">Spent This Month</div>
         <div class="stat-value" id="statExpenses">R 0.00</div>
       </div>
       <div class="stat-card balance-card">
-        <div class="stat-emoji">🏦</div>
         <div class="stat-label">Money Left</div>
         <div class="stat-value" id="statBalance">R 0.00</div>
       </div>
-      <div class="stat-card savings-card">
-        <div class="stat-emoji">📈</div>
-        <div class="stat-label">Savings Rate</div>
-        <div class="stat-value" id="statSavings">0%</div>
-      </div>
     </div>
 
-   
+
     <div class="card">
       <div class="progress-header">
-        <span>Budget used this month</span>
+        <span>Money used this month</span>
         <span id="budgetUsedPct" class="progress-pct">0%</span>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="budgetProgressBar" style="width:0%"></div>
       </div>
       <p class="progress-hint" id="progressHint">Set your income to start tracking</p>
-    </div>
-
-
-    <div class="two-col">
-      <div class="card chart-card">
-        <h3 class="card-title">Spending Breakdown 🍩</h3>
-        <div class="chart-wrap">
-          <canvas id="donutChart"></canvas>
-          <div class="chart-empty" id="chartEmpty">Add expenses to see chart</div>
+      <div class="progress-meta-row">
+        <div class="progress-meta-item">
+          <span class="progress-meta-label">Days left</span>
+          <span class="progress-meta-value" id="daysLeftValue">—</span>
+        </div>
+        <div class="progress-meta-item">
+          <span class="progress-meta-label">Left over</span>
+          <span class="progress-meta-value" id="savingsSoFarValue">—</span>
+        </div>
+        <div class="progress-meta-item">
+          <span class="progress-meta-label">On track?</span>
+          <span class="progress-meta-value" id="onTrackValue">—</span>
         </div>
       </div>
-      <div class="card">
-        <h3 class="card-title">Your Insights 💡</h3>
-        <div id="insightsList"><p class="empty-msg">Add some expenses to get insights.</p></div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header-row">
+        <h3 class="card-title">Savings Goal</h3>
+        <span class="budget-overall-badge" id="savingsGoalBadge">—</span>
+      </div>
+      <div id="savingsGoalBody"></div>
+      <button class="btn-set-income full-width" onclick="openSavingsGoalModal()">Set / Edit Goal</button>
+    </div>
+
+
+    <div class="card">
+      <div class="card-header-row">
+        <h3 class="card-title">Budget Limits</h3>
+        <span class="budget-overall-badge" id="dashBudgetBadge">—</span>
+      </div>
+      <div id="dashBudgetLimits"></div>
+      <button class="btn-set-income full-width" onclick="openBudgetModal()">Set / Edit Limits</button>
+    </div>
+
+
+    <div class="card">
+      <h3 class="card-title">The Tea</h3>
+      <div id="dashInsights"></div>
+    </div>
+
+
+    <div class="card chart-card">
+      <h3 class="card-title">Spending Breakdown</h3>
+      <div class="chart-wrap">
+        <canvas id="donutChart"></canvas>
+        <div class="chart-empty" id="chartEmpty">Add expenses to see chart</div>
       </div>
     </div>
 
-  
+
     <div class="card">
       <div class="card-header-row">
-        <h3 class="card-title">Recent Spending 🧾</h3>
+        <h3 class="card-title">Recent Spending</h3>
         <a href="expenses.html" class="link-subtle">See all →</a>
       </div>
       <div id="recentList">
         <div class="empty-state">
-          <div class="empty-icon">🤔</div>
           <p>Nothing here yet.<br><a href="expenses.html">Add your first expense →</a></p>
         </div>
       </div>
@@ -160,8 +258,9 @@
   </main>
 </div>
 
-<script src="js/storage.js"></script>
-<script src="js/app.js"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/insights.js?v=5"></script>
+<script src="js/dashboard.js?v=5"></script>
 </body>
 </html>
